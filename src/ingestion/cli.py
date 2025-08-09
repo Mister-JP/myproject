@@ -1,22 +1,21 @@
 from __future__ import annotations
 
 import json
-from typing import Optional
 
 import typer
-from dotenv import load_dotenv
 import yaml
+from dotenv import load_dotenv
 
+from .citations import fetch_openalex_neighbors
 from .config import Settings
 from .connectors.arxiv import ArxivConnector
+from .connectors.base import QuerySpec
+from .connectors.doaj import DOAJConnector
 from .connectors.openalex import OpenAlexConnector
 from .connectors.semanticscholar import SemanticScholarConnector
-from .connectors.doaj import DOAJConnector
-from .connectors.base import QuerySpec
 from .db import Base, create_session_factory, ensure_schema
-from .storage import ensure_storage_dir
 from .ingest import ingest_records
-from .citations import fetch_openalex_neighbors
+from .storage import ensure_storage_dir
 
 
 def _init_db(session_factory) -> None:
@@ -26,7 +25,7 @@ def _init_db(session_factory) -> None:
         ensure_schema(Base, engine)
 
 
-def _normalize_license(raw: Optional[str]) -> Optional[str]:
+def _normalize_license(raw: str | None) -> str | None:
     if not raw:
         return None
     s = raw.strip().lower()
@@ -47,7 +46,7 @@ def _normalize_license(raw: Optional[str]) -> Optional[str]:
 
 def main(
     query: str = typer.Option(..., "--query", help="Search query (keywords)"),
-    author: Optional[str] = typer.Option(None, "--author", help="Author filter (exact match)"),
+    author: str | None = typer.Option(None, "--author", help="Author filter (exact match)"),
     max_results: int = typer.Option(10, "--max-results", help="Max results to fetch"),
     source: str = typer.Option("arxiv", "--source", help="Data source: arxiv|openalex|semanticscholar"),
 ):
@@ -92,7 +91,7 @@ app = typer.Typer(add_completion=False)
 @app.command("run")
 def cmd_run(
     query: str = typer.Option(..., "--query"),
-    author: Optional[str] = typer.Option(None, "--author"),
+    author: str | None = typer.Option(None, "--author"),
     max_results: int = typer.Option(10, "--max-results"),
     source: str = typer.Option("arxiv", "--source"),
 ):
@@ -135,7 +134,7 @@ def cmd_hydrate_citations(
                     "doaj": DOAJConnector(),
                 }.get(source, OpenAlexConnector())
                 spec = QuerySpec(keywords=[ndoi], max_results=1)
-                res = ingest_records(
+                ingest_records(
                     connector.search(spec),
                     session_factory=session_factory,
                     storage_dir=settings.storage_dir,
@@ -166,7 +165,7 @@ def cmd_sweep_file(
         author: "J. Smith"
     """
     load_dotenv()
-    with open(file, "r", encoding="utf-8") as f:
+    with open(file, encoding="utf-8") as f:
         items = yaml.safe_load(f) or []
     if not isinstance(items, list):
         typer.secho("sweeps file must be a list", fg=typer.colors.RED)

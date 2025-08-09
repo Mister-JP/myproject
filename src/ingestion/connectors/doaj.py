@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional
-
+from collections.abc import Iterable
 from urllib.parse import quote_plus
 
 from ..utils import http_get_json
-
-from .base import Connector, PDFRef, PaperMetadata, QuerySpec
-
+from .base import Connector, PaperMetadata, PDFRef, QuerySpec
 
 BASE_URL = "https://doaj.org/api/v2/search/articles/"
 FALLBACK_URL = "https://doaj.org/api/search/articles/"
@@ -101,7 +98,7 @@ class DOAJConnector(Connector):
                 citation_count=None,
             )
 
-    def fetch_pdf(self, item: PaperMetadata) -> Optional[PDFRef]:
+    def fetch_pdf(self, item: PaperMetadata) -> PDFRef | None:
         if item.pdf_url:
             return PDFRef(url=item.pdf_url)
         return None

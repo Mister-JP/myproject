@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Optional
-
 from contextlib import asynccontextmanager
+from typing import Any
+
 from fastapi import FastAPI, HTTPException, Query
 from opensearchpy import OpenSearch
-from sqlalchemy import select
 
 from .config import Settings
 from .db import Base, create_session_factory
@@ -37,7 +36,7 @@ INDEX_NAME = os.environ.get("SEARCH_INDEX", "papers")
 
 
 @app.get("/paper/{paper_id}")
-def get_paper(paper_id: int) -> Dict[str, Any]:
+def get_paper(paper_id: int) -> dict[str, Any]:
     settings = Settings.from_env()
     session_factory = create_session_factory(settings.database_url)
     with session_factory() as session:
@@ -65,26 +64,26 @@ def get_paper(paper_id: int) -> Dict[str, Any]:
 
 @app.get("/search")
 def search(
-    q: Optional[str] = Query(None, description="Keyword query"),
-    author: Optional[str] = Query(None, description="Author filter"),
-    year_start: Optional[int] = Query(None),
-    year_end: Optional[int] = Query(None),
-    license: Optional[str] = Query(None, alias="license"),
-    source: Optional[str] = Query(None),
+    q: str | None = Query(None, description="Keyword query"),
+    author: str | None = Query(None, description="Author filter"),
+    year_start: int | None = Query(None),
+    year_end: int | None = Query(None),
+    license: str | None = Query(None, alias="license"),
+    source: str | None = Query(None),
     sort: str = Query("recency", description="recency|citations"),
     size: int = Query(20, ge=1, le=100),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     client = _get_client()
 
-    must: list[Dict[str, Any]] = []
-    filter_q: list[Dict[str, Any]] = []
+    must: list[dict[str, Any]] = []
+    filter_q: list[dict[str, Any]] = []
 
     if q:
         must.append({"multi_match": {"query": q, "fields": ["title^2", "abstract"]}})
     if author:
         filter_q.append({"term": {"authors": author}})
     if year_start is not None or year_end is not None:
-        range_body: Dict[str, Any] = {}
+        range_body: dict[str, Any] = {}
         if year_start is not None:
             range_body["gte"] = year_start
         if year_end is not None:

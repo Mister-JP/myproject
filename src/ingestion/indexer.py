@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 from opensearchpy import OpenSearch
 from sqlalchemy import select
@@ -9,7 +9,6 @@ from sqlalchemy import select
 from .config import Settings
 from .db import Base, create_session_factory
 from .models import Paper
-
 
 INDEX_NAME = os.environ.get("SEARCH_INDEX", "papers")
 
@@ -20,7 +19,7 @@ def _get_client() -> OpenSearch:
 
 
 def ensure_index(client: OpenSearch) -> None:
-    mapping: Dict[str, Any] = {
+    mapping: dict[str, Any] = {
         "settings": {
             "index": {"number_of_shards": 1, "number_of_replicas": 0},
             "analysis": {

@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from ..utils import http_get_json
-
-from .base import Connector, PDFRef, PaperMetadata, QuerySpec
-
+from .base import Connector, PaperMetadata, PDFRef, QuerySpec
 
 BASE_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
 
@@ -61,7 +59,7 @@ class SemanticScholarConnector(Connector):
                 citation_count=citation_count,
             )
 
-    def fetch_pdf(self, item: PaperMetadata) -> Optional[PDFRef]:
+    def fetch_pdf(self, item: PaperMetadata) -> PDFRef | None:
         if item.pdf_url:
             return PDFRef(url=item.pdf_url)
         return None

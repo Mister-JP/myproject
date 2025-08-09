@@ -4,12 +4,12 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from threading import Lock
-from typing import Any, Dict, Optional
+from typing import Any
 
 import requests
 
 
-def normalize_license(raw: Optional[str]) -> Optional[str]:
+def normalize_license(raw: str | None) -> str | None:
     """Normalize common open licenses to a stable token.
 
     Returns lowercase simplified identifiers such as:
@@ -19,7 +19,7 @@ def normalize_license(raw: Optional[str]) -> Optional[str]:
     if not raw:
         return None
     s = raw.strip().lower()
-    cc_map: Dict[str, str] = {
+    cc_map: dict[str, str] = {
         "cc-by": "cc-by",
         "cc by": "cc-by",
         "creative commons attribution": "cc-by",
@@ -34,7 +34,7 @@ def normalize_license(raw: Optional[str]) -> Optional[str]:
     return s
 
 
-def license_permits_pdf_storage(normalized_license: Optional[str]) -> bool:
+def license_permits_pdf_storage(normalized_license: str | None) -> bool:
     if not normalized_license:
         return False
     return normalized_license.startswith(("cc-", "cc0", "public-domain"))
@@ -53,7 +53,7 @@ class PerSourceRateLimiter:
 
     def __init__(self) -> None:
         self._lock = Lock()
-        self._last_call_epoch_seconds: Dict[str, float] = {}
+        self._last_call_epoch_seconds: dict[str, float] = {}
 
     def throttle(self, source_name: str, min_interval_seconds: float) -> None:
         if not source_name or min_interval_seconds <= 0:
@@ -74,11 +74,11 @@ global_rate_limiter = PerSourceRateLimiter()
 def http_get_json(
     url: str,
     *,
-    params: Optional[Dict[str, Any]] = None,
+    params: dict[str, Any] | None = None,
     timeout_seconds: int = 30,
-    source_name: Optional[str] = None,
+    source_name: str | None = None,
     min_interval_seconds: float = 0.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """HTTP GET returning JSON with optional per-source throttling.
 
     Intended for connector APIs that do not require streaming.
@@ -102,7 +102,7 @@ class TelemetryCounters:
 
 
 @contextmanager
-def telemetry_span(name: str, counters: Optional[TelemetryCounters] = None):  # pragma: no cover - trivial
+def telemetry_span(name: str, counters: TelemetryCounters | None = None):  # pragma: no cover - trivial
     start = time.time()
     try:
         yield

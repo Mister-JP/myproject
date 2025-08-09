@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from ingestion.connectors.base import PaperMetadata
 from ingestion.db import Base, create_session_factory, ensure_schema

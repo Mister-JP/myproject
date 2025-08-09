@@ -6,7 +6,8 @@ tenacity==9.0.0
 python-dotenv==1.0.1
 requests==2.31.0
 fastapi==0.111.0
-uvicorn[standard]==0.30.0
+uvicorn==0.30.0
+python-multipart==0.0.9
 opensearch-py==2.6.0
 vcrpy==6.0.1
 PyYAML==6.0.2

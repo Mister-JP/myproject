@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional
 import re
+from collections.abc import Iterable
 
 from ..utils import http_get_json
-
-from .base import Connector, PDFRef, PaperMetadata, QuerySpec
-
+from .base import Connector, PaperMetadata, PDFRef, QuerySpec
 
 BASE_URL = "https://api.openalex.org/works"
 
@@ -32,7 +30,7 @@ class OpenAlexConnector(Connector):
             params["search"] = ""
         if query.authors:
             # OpenAlex filter by author.display_name.search
-            filters.append("author.display_name.search:%s" % (" ".join(query.authors)))
+            filters.append(f"author.display_name.search:{' '.join(query.authors)}")
         if query.year_start is not None or query.year_end is not None:
             start = query.year_start or "1900"
             end = query.year_end or "2100"
@@ -96,7 +94,7 @@ class OpenAlexConnector(Connector):
                 citation_count=citation_count,
             )
 
-    def fetch_pdf(self, item: PaperMetadata) -> Optional[PDFRef]:
+    def fetch_pdf(self, item: PaperMetadata) -> PDFRef | None:
         if item.pdf_url:
             return PDFRef(url=item.pdf_url)
         return None

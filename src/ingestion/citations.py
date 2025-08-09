@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Set
-
 from .utils import http_get_json
 
 
-def fetch_openalex_neighbors(seed_doi: str) -> List[str]:
+def fetch_openalex_neighbors(seed_doi: str) -> list[str]:
     """Return a list of DOIs that cite the seed OR are referenced by the seed.
 
     Uses OpenAlex links:
@@ -13,7 +11,7 @@ def fetch_openalex_neighbors(seed_doi: str) -> List[str]:
       - References of the seed: /works/doi:{seed}
     """
     base = "https://api.openalex.org/works"
-    dois: Set[str] = set()
+    dois: set[str] = set()
 
     # 1) Who cites the seed
     data = http_get_json(

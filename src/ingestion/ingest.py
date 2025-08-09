@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from sqlalchemy.orm import sessionmaker
 
+from .connectors.base import PaperMetadata
 from .dedup import is_duplicate
 from .models import Paper
 from .storage import download_pdf_to_storage
-from .utils import TelemetryCounters, license_permits_pdf_storage, normalize_license, rate_limit_sleep
+from .utils import (
+    TelemetryCounters,
+    license_permits_pdf_storage,
+    normalize_license,
+    rate_limit_sleep,
+)
 
 
 @dataclass
@@ -19,13 +25,12 @@ class IngestResult:
 
 
 def ingest_records(
-    records: Iterable["PaperMetadata"],
+    records: Iterable[PaperMetadata],
     session_factory: sessionmaker,
     storage_dir: str,
     request_timeout_seconds: int,
     rate_limit_delay_seconds: int,
 ) -> IngestResult:
-    from .connectors.base import PaperMetadata  # local import to avoid cycles
 
     counters = TelemetryCounters()
     with session_factory() as session:

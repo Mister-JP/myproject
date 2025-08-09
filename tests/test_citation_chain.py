@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import os
-from typing import Iterable
+from collections.abc import Iterable
 
 import pytest
 
+from ingestion.citations import fetch_openalex_neighbors
 from ingestion.connectors.base import PaperMetadata
 from ingestion.db import Base, create_session_factory, ensure_schema
 from ingestion.ingest import ingest_records
-from ingestion.citations import fetch_openalex_neighbors
 
 
 def test_citation_chain_ingest_dedup(tmp_path):

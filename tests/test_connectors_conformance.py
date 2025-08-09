@@ -1,23 +1,22 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Type
 
 import pytest
 import vcr
 
 from ingestion.connectors.base import Connector, PaperMetadata, QuerySpec
+from ingestion.connectors.doaj import DOAJConnector
 from ingestion.connectors.openalex import OpenAlexConnector
 from ingestion.connectors.semanticscholar import SemanticScholarConnector
-from ingestion.connectors.doaj import DOAJConnector
-
 
 CASSETTES_DIR = Path(__file__).parent / "cassettes"
 CASSETTES_DIR.mkdir(exist_ok=True)
 
 
-CONNECTORS: list[tuple[str, Type[Connector]]] = [
+CONNECTORS: list[tuple[str, type[Connector]]] = [
     ("openalex", OpenAlexConnector),
     ("semanticscholar", SemanticScholarConnector),
 ]
@@ -37,7 +36,7 @@ def _should_run_live(name: str) -> bool:
 
 
 @pytest.mark.parametrize("name,cls", CONNECTORS)
-def test_connector_basic_conformance(name: str, cls: Type[Connector]):
+def test_connector_basic_conformance(name: str, cls: type[Connector]):
     if not _should_run_live(name):
         pytest.skip("RUN_LIVE!=1")
 

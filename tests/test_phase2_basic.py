@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ingestion.utils import normalize_license, license_permits_pdf_storage, PerSourceRateLimiter
+from ingestion.utils import PerSourceRateLimiter, license_permits_pdf_storage, normalize_license
 
 
 def test_license_normalization_and_policy():

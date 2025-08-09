@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from fastapi.testclient import TestClient
 
@@ -11,9 +11,9 @@ from ingestion.api import app
 class _FakeSearchClient:
     def __init__(self) -> None:
         self.last_index: str | None = None
-        self.last_body: Dict[str, Any] | None = None
+        self.last_body: dict[str, Any] | None = None
 
-    def search(self, *, index: str, body: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore[override]
+    def search(self, *, index: str, body: dict[str, Any]) -> dict[str, Any]:  # type: ignore[override]
         self.last_index = index
         self.last_body = body
         # return minimal ES-like response

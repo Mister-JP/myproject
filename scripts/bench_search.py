@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import statistics
 import time
-from typing import Any, Dict
+from typing import Any
 
 from opensearchpy import OpenSearch
 
@@ -13,7 +13,7 @@ def main() -> None:
     index = os.environ.get("SEARCH_INDEX", "papers")
     client = OpenSearch(hosts=[host])
 
-    query: Dict[str, Any] = {
+    query: dict[str, Any] = {
         "bool": {
             "must": {"multi_match": {"query": "transformer", "fields": ["title^2", "abstract"]}},
             "filter": [],
