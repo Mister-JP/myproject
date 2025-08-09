@@ -49,7 +49,7 @@ def main(
     author: str | None = typer.Option(None, "--author", help="Author filter (exact match)"),
     max_results: int = typer.Option(10, "--max-results", help="Max results to fetch"),
     source: str = typer.Option(
-        "arxiv", "--source", help="Data source: arxiv|openalex|semanticscholar"
+        "arxiv", "--source", help="Data source: arxiv|openalex|semanticscholar|doaj"
     ),
 ):
     """Run a search against the selected source, store metadata and PDFs (license permitting)."""
@@ -95,7 +95,9 @@ def cmd_run(
     query: str = typer.Option(..., "--query"),
     author: str | None = typer.Option(None, "--author"),
     max_results: int = typer.Option(10, "--max-results"),
-    source: str = typer.Option("arxiv", "--source"),
+    source: str = typer.Option(
+        "arxiv", "--source", help="Data source: arxiv|openalex|semanticscholar|doaj"
+    ),
 ):
     main(query=query, author=author, max_results=max_results, source=source)
 

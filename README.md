@@ -71,7 +71,7 @@ See `docs/license_policy.md` for details.
 - `make reindex`: push papers from DB into search index
 - `make hydrate-citations seed=10.1007/s11263-015-0816-y depth=1`: simple citation chaining
   - Citation neighbors are fetched via OpenAlex (`ingestion.citations.fetch_openalex_neighbors`).
-  
+
 ### Benchmarking search
 - Ensure OpenSearch is up (`make search-up`), index documents (`make reindex`), then run `make bench`.
 - `make api`: run the FastAPI server on `http://localhost:8000`
@@ -83,3 +83,43 @@ See `docs/license_policy.md` for details.
 
 - `make lint` / `make format` / `make test`
 
+
+## Phase-2 Quickstart
+
+1) Start services (DB + OpenSearch)
+
+```bash
+make up
+```
+
+2) Ingest from multiple sources
+
+```bash
+PYTHONPATH=src python -m ingestion.cli run --query "large language models" --max-results 10 --source openalex
+PYTHONPATH=src python -m ingestion.cli run --query "transformers" --max-results 10 --source semanticscholar
+PYTHONPATH=src python -m ingestion.cli run --query "climate change" --max-results 10 --source doaj
+```
+
+3) Reindex into OpenSearch
+
+```bash
+make reindex
+```
+
+4) Benchmark search
+
+```bash
+make bench  # target: p95 < 200ms for size=20
+```
+
+5) Run API and try queries
+
+```bash
+make api  # then visit http://localhost:8000/docs
+```
+
+6) Citation chaining (depth=1)
+
+```bash
+PYTHONPATH=src python -m ingestion.cli hydrate-citations 10.1038/nature14539 --depth 1 --max-per-level 25
+```
