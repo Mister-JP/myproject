@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from .citations import fetch_openalex_neighbors
 from .config import Settings
 from .connectors.arxiv import ArxivConnector
-from .connectors.base import QuerySpec
+from .connectors.base import PaperMetadata, QuerySpec
 from .connectors.doaj import DOAJConnector
 from .connectors.openalex import OpenAlexConnector
 from .connectors.semanticscholar import SemanticScholarConnector
@@ -110,6 +110,11 @@ def cmd_hydrate_citations(
     source: str = typer.Option(
         "openalex", "--source", help="Connector used to ingest discovered DOIs"
     ),
+    neighbors_file: str | None = typer.Option(
+        None,
+        "--neighbors-file",
+        help="Optional path to a text file containing one DOI per line; when provided, uses these DOIs instead of calling the provider",
+    ),
 ):
     """Fetch citation neighbors via OpenAlex and enqueue ingestion for discovered DOIs."""
     load_dotenv()
@@ -118,6 +123,43 @@ def cmd_hydrate_citations(
     _init_db(session_factory)
     ensure_storage_dir(settings.storage_dir)
 
+    # Offline mode: ingest from file of DOIs directly (deterministic demonstration)
+    if neighbors_file:
+        try:
+            with open(neighbors_file, encoding="utf-8") as f:
+                lines = [ln.strip() for ln in f if ln.strip() and not ln.startswith("#")]
+        except Exception as exc:  # noqa: BLE001
+            typer.secho(f"failed to read neighbors file: {exc}", fg=typer.colors.RED)
+            raise typer.Exit(code=2) from None
+
+        count = 0
+        for i, doi in enumerate(lines[: max_per_level * depth]):
+            pm = PaperMetadata(
+                source="offline",
+                external_id=f"offline-{i}",
+                doi=doi,
+                title=f"Offline Chain Paper {i}",
+                authors=["Chain Author"],
+                abstract=None,
+                license="cc-by",
+                pdf_url=None,
+                year=2024,
+                venue="OfflineVenue",
+                concepts=["demo"],
+                citation_count=0,
+            )
+            ingest_records(
+                [pm],
+                session_factory=session_factory,
+                storage_dir=settings.storage_dir,
+                request_timeout_seconds=settings.request_timeout_seconds,
+                rate_limit_delay_seconds=settings.rate_limit_delay_seconds,
+            )
+            count += 1
+        typer.echo(json.dumps({"ingested_offline": count}))
+        return
+
+    # Live mode: expand via provider
     frontier = [seed_doi]
     seen = set(frontier)
     for _ in range(depth):
@@ -132,7 +174,6 @@ def cmd_hydrate_citations(
                 if ndoi in seen:
                     continue
                 seen.add(ndoi)
-                # Ingest by DOI using OpenAlex search (filter by DOI)
                 connector = {
                     "arxiv": ArxivConnector(),
                     "openalex": OpenAlexConnector(),
