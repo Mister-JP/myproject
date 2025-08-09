@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "literature-ingestion"
-version = "0.1.0"
+version = "0.2.0"
 description = "Phase-1 backend foundations: arXiv ingestion pipeline with PostgreSQL storage and CLI"
 authors = ["Your Team <team@example.com>"]
 readme = "README.md"
