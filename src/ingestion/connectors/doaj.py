@@ -78,7 +78,12 @@ class DOAJConnector(Connector):
             for link in bib.get("link", []) or []:
                 if not isinstance(link, dict):
                     continue
-                if (link.get("type") or "").lower() in {"application/pdf", "pdf", "fulltext", "full-text"}:
+                if (link.get("type") or "").lower() in {
+                    "application/pdf",
+                    "pdf",
+                    "fulltext",
+                    "full-text",
+                }:
                     pdf_url = link.get("url")
                     if pdf_url:
                         break
@@ -102,5 +107,3 @@ class DOAJConnector(Connector):
         if item.pdf_url:
             return PDFRef(url=item.pdf_url)
         return None
-
-

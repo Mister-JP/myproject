@@ -48,7 +48,9 @@ def main(
     query: str = typer.Option(..., "--query", help="Search query (keywords)"),
     author: str | None = typer.Option(None, "--author", help="Author filter (exact match)"),
     max_results: int = typer.Option(10, "--max-results", help="Max results to fetch"),
-    source: str = typer.Option("arxiv", "--source", help="Data source: arxiv|openalex|semanticscholar"),
+    source: str = typer.Option(
+        "arxiv", "--source", help="Data source: arxiv|openalex|semanticscholar"
+    ),
 ):
     """Run a search against the selected source, store metadata and PDFs (license permitting)."""
     load_dotenv()
@@ -103,7 +105,9 @@ def cmd_hydrate_citations(
     seed_doi: str = typer.Argument(..., help="Seed DOI to expand"),
     depth: int = typer.Option(1, "--depth", min=1, max=2),
     max_per_level: int = typer.Option(25, "--max-per-level", min=1, max=100),
-    source: str = typer.Option("openalex", "--source", help="Connector used to ingest discovered DOIs"),
+    source: str = typer.Option(
+        "openalex", "--source", help="Connector used to ingest discovered DOIs"
+    ),
 ):
     """Fetch citation neighbors via OpenAlex and enqueue ingestion for discovered DOIs."""
     load_dotenv()
@@ -178,14 +182,18 @@ def cmd_sweep_file(
         author = (item or {}).get("author")
         source = (item or {}).get("source", "openalex")
         max_results = int((item or {}).get("max_results", 10))
-        typer.echo(f"[sweep {idx}] source={source} query=\"{q}\" author={author or ''} max={max_results}")
+        typer.echo(
+            f"[sweep {idx}] source={source} query=\"{q}\" author={author or ''} max={max_results}"
+        )
         main(query=q, author=author, max_results=max_results, source=source)
 
 
 @app.command("sweep-daemon")
 def cmd_sweep_daemon(
     file: str = typer.Option("sweeps.yaml", "--file", help="Sweeps YAML file"),
-    interval_seconds: int = typer.Option(3600, "--interval", min=10, help="Seconds between full sweeps"),
+    interval_seconds: int = typer.Option(
+        3600, "--interval", min=10, help="Seconds between full sweeps"
+    ),
     max_loops: int = typer.Option(0, "--max-loops", help="Stop after N loops (0 = forever)"),
 ):
     """Run sweeps from a YAML file in a loop with a fixed interval.

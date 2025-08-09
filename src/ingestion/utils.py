@@ -102,7 +102,9 @@ class TelemetryCounters:
 
 
 @contextmanager
-def telemetry_span(name: str, counters: TelemetryCounters | None = None):  # pragma: no cover - trivial
+def telemetry_span(
+    name: str, counters: TelemetryCounters | None = None
+):  # pragma: no cover - trivial
     start = time.time()
     try:
         yield
@@ -111,7 +113,7 @@ def telemetry_span(name: str, counters: TelemetryCounters | None = None):  # pra
         # Simple stdout tracing; could be swapped for OpenTelemetry later
         msg = f"telemetry span name={name} duration_ms={duration_ms}"
         if counters is not None:
-            msg += f" ingested={counters.ingested} skipped={counters.skipped} errors={counters.errors}"
+            msg += (
+                f" ingested={counters.ingested} skipped={counters.skipped} errors={counters.errors}"
+            )
         print(msg)
-
-

@@ -17,7 +17,12 @@ class _FakeSearchClient:
         self.last_index = index
         self.last_body = body
         # return minimal ES-like response
-        return {"hits": {"total": {"value": 1}, "hits": [{"_id": "1", "_score": 1.0, "_source": {"title": "x"}}]}}
+        return {
+            "hits": {
+                "total": {"value": 1},
+                "hits": [{"_id": "1", "_score": 1.0, "_source": {"title": "x"}}],
+            }
+        }
 
 
 def test_search_builds_expected_filters(monkeypatch):
@@ -56,5 +61,3 @@ def test_search_builds_expected_filters(monkeypatch):
     assert rng["range"]["year"]["lte"] == 2022
     # Sort by citations
     assert body["sort"] == [{"citation_count": {"order": "desc"}}]
-
-

@@ -110,5 +110,3 @@ def search(
         for h in res.get("hits", {}).get("hits", [])
     ]
     return {"total": res.get("hits", {}).get("total", {}).get("value", 0), "hits": hits}
-
-

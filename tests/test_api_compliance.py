@@ -61,5 +61,3 @@ def test_get_paper_enforces_no_serve_pdf():
     r2 = client.get(f"/paper/{id_restricted}")
     assert r2.status_code == 200
     assert r2.json()["pdf_path"] is None
-
-

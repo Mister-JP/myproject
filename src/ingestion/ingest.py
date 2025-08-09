@@ -50,7 +50,10 @@ def ingest_records(
 
                 pdf_path: str | None = None
                 if rec.pdf_url and license_permits_pdf_storage(rec.license):
-                    file_hint = f"{rec.source}-{(rec.external_id or rec.doi or rec.title)[:80]}".strip("-") + ".pdf"
+                    file_hint = (
+                        f"{rec.source}-{(rec.external_id or rec.doi or rec.title)[:80]}".strip("-")
+                        + ".pdf"
+                    )
                     pdf_path = download_pdf_to_storage(
                         rec.pdf_url,
                         storage_dir=storage_dir,
@@ -81,5 +84,3 @@ def ingest_records(
                 counters.errors += 1
 
     return IngestResult(stored=counters.ingested, skipped=counters.skipped, errors=counters.errors)
-
-

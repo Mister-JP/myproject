@@ -46,5 +46,3 @@ def test_ingestion_does_not_store_pdf_for_restricted_license(tmp_path: Path):
 
     # Ensure no file was created in storage
     assert not any(tmp_path.iterdir())
-
-

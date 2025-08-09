@@ -63,5 +63,3 @@ class SemanticScholarConnector(Connector):
         if item.pdf_url:
             return PDFRef(url=item.pdf_url)
         return None
-
-

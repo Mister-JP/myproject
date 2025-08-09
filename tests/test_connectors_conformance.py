@@ -62,5 +62,3 @@ def test_connector_basic_conformance(name: str, cls: type[Connector]):
     _ = first.venue
     _ = first.concepts
     _ = first.citation_count
-
-

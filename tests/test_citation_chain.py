@@ -69,5 +69,3 @@ def test_fetch_openalex_neighbors_live():
     assert isinstance(neighbors, list)
     # Expect at least some neighbors; threshold low to avoid flakiness
     assert len(neighbors) >= 10
-
-

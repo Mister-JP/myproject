@@ -20,7 +20,7 @@ class OpenAlexConnector(Connector):
         filters: list[str] = []
         # If a DOI is present in keywords, use a direct DOI filter for precision
         doi_from_kw = None
-        for kw in (query.keywords or []):
+        for kw in query.keywords or []:
             if isinstance(kw, str) and re.match(r"^10\.\S+/\S+", kw):
                 doi_from_kw = kw
                 break
@@ -49,7 +49,9 @@ class OpenAlexConnector(Connector):
         for item in data.get("results", [])[: query.max_results or 10]:
             doi = item.get("doi")
             title = item.get("title") or item.get("display_name") or ""
-            authors = [a.get("author", {}).get("display_name", "") for a in item.get("authorships", [])]
+            authors = [
+                a.get("author", {}).get("display_name", "") for a in item.get("authorships", [])
+            ]
             abstract = item.get("abstract") or None
             license_str = None
             oa_info = item.get("open_access", {})
@@ -98,5 +100,3 @@ class OpenAlexConnector(Connector):
         if item.pdf_url:
             return PDFRef(url=item.pdf_url)
         return None
-
-
