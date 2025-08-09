@@ -1,4 +1,12 @@
 from .arxiv import ArxivConnector
-from .base import Connector, PaperMetadata
+from .openalex import OpenAlexConnector
+from .base import Connector, PaperMetadata, QuerySpec, PDFRef
 
-__all__ = ["ArxivConnector", "Connector", "PaperMetadata"]
+__all__ = [
+    "Connector",
+    "PaperMetadata",
+    "QuerySpec",
+    "PDFRef",
+    "ArxivConnector",
+    "OpenAlexConnector",
+]

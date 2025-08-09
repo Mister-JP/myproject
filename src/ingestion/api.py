@@ -1,0 +1,107 @@
+from __future__ import annotations
+
+import os
+from typing import Any, Dict, Optional
+
+from fastapi import FastAPI, HTTPException, Query
+from opensearchpy import OpenSearch
+from sqlalchemy import select
+
+from .config import Settings
+from .db import Base, create_session_factory
+from .models import Paper
+
+
+app = FastAPI(title="Literature Search API", version="0.2.0")
+
+
+def _get_client() -> OpenSearch:
+    host = os.environ.get("SEARCH_HOST", "http://localhost:9200")
+    return OpenSearch(hosts=[host])
+
+
+INDEX_NAME = os.environ.get("SEARCH_INDEX", "papers")
+
+
+@app.on_event("startup")
+def startup() -> None:
+    settings = Settings.from_env()
+    # ensure DB exists
+    session_factory = create_session_factory(settings.database_url)
+    with session_factory() as session:
+        engine = session.get_bind()
+        Base.metadata.create_all(engine)
+
+
+@app.get("/paper/{paper_id}")
+def get_paper(paper_id: int) -> Dict[str, Any]:
+    settings = Settings.from_env()
+    session_factory = create_session_factory(settings.database_url)
+    with session_factory() as session:
+        paper = session.get(Paper, paper_id)
+        if not paper:
+            raise HTTPException(status_code=404, detail="Paper not found")
+        return {
+            "id": paper.id,
+            "source": paper.source,
+            "external_id": paper.external_id,
+            "doi": paper.doi,
+            "title": paper.title,
+            "authors": paper.authors.get("list", []) if paper.authors else [],
+            "abstract": paper.abstract,
+            "license": paper.license,
+            "pdf_path": paper.pdf_path,
+            "fetched_at": paper.fetched_at.isoformat() if paper.fetched_at else None,
+        }
+
+
+@app.get("/search")
+def search(
+    q: Optional[str] = Query(None, description="Keyword query"),
+    author: Optional[str] = Query(None, description="Author filter"),
+    year_start: Optional[int] = Query(None),
+    year_end: Optional[int] = Query(None),
+    license: Optional[str] = Query(None, alias="license"),
+    source: Optional[str] = Query(None),
+    sort: str = Query("recency", description="recency|citations"),
+    size: int = Query(20, ge=1, le=100),
+) -> Dict[str, Any]:
+    client = _get_client()
+
+    must: list[Dict[str, Any]] = []
+    filter_q: list[Dict[str, Any]] = []
+
+    if q:
+        must.append({"multi_match": {"query": q, "fields": ["title^2", "abstract"]}})
+    if author:
+        filter_q.append({"term": {"authors": author}})
+    if year_start is not None or year_end is not None:
+        range_body: Dict[str, Any] = {}
+        if year_start is not None:
+            range_body["gte"] = year_start
+        if year_end is not None:
+            range_body["lte"] = year_end
+        filter_q.append({"range": {"year": range_body}})
+    if license:
+        filter_q.append({"term": {"license": license}})
+    if source:
+        filter_q.append({"term": {"source": source}})
+
+    sort_clause = [{"fetched_at": {"order": "desc"}}]
+    if sort == "citations":
+        sort_clause = [{"citation_count": {"order": "desc"}}]
+
+    query = {"bool": {"must": must or {"match_all": {}}, "filter": filter_q}}
+
+    res = client.search(index=INDEX_NAME, body={"query": query, "size": size, "sort": sort_clause})
+    hits = [
+        {
+            "id": h.get("_id"),
+            "score": h.get("_score"),
+            **h.get("_source", {}),
+        }
+        for h in res.get("hits", {}).get("hits", [])
+    ]
+    return {"total": res.get("hits", {}).get("total", {}).get("value", 0), "hits": hits}
+
+
