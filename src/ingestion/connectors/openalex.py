@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from typing import Iterable, Optional
+import re
 
-import requests
+from ..utils import http_get_json
 
 from .base import Connector, PDFRef, PaperMetadata, QuerySpec
 
@@ -19,6 +20,16 @@ class OpenAlexConnector(Connector):
             "per_page": str(query.max_results or 10),
         }
         filters: list[str] = []
+        # If a DOI is present in keywords, use a direct DOI filter for precision
+        doi_from_kw = None
+        for kw in (query.keywords or []):
+            if isinstance(kw, str) and re.match(r"^10\.\S+/\S+", kw):
+                doi_from_kw = kw
+                break
+        if doi_from_kw:
+            filters.append(f"doi:{doi_from_kw}")
+            params["per_page"] = "1"
+            params["search"] = ""
         if query.authors:
             # OpenAlex filter by author.display_name.search
             filters.append("author.display_name.search:%s" % (" ".join(query.authors)))
@@ -30,9 +41,13 @@ class OpenAlexConnector(Connector):
         if filters:
             params["filter"] = ",".join(filters)
 
-        r = requests.get(BASE_URL, params=params, timeout=30)
-        r.raise_for_status()
-        data = r.json()
+        data = http_get_json(
+            BASE_URL,
+            params=params,
+            timeout_seconds=30,
+            source_name=self.source_name,
+            min_interval_seconds=0.5,
+        )
         for item in data.get("results", [])[: query.max_results or 10]:
             doi = item.get("doi")
             title = item.get("title") or item.get("display_name") or ""
@@ -57,6 +72,15 @@ class OpenAlexConnector(Connector):
             citation_count = item.get("cited_by_count")
             external_id = item.get("id")
 
+            # best OA PDF if available
+            pdf_url = None
+            try:
+                best_oa = item.get("best_oa_location") or {}
+                if isinstance(best_oa, dict):
+                    pdf_url = best_oa.get("pdf_url") or best_oa.get("url")
+            except Exception:  # noqa: BLE001
+                pdf_url = None
+
             yield PaperMetadata(
                 source=self.source_name,
                 external_id=external_id,
@@ -65,7 +89,7 @@ class OpenAlexConnector(Connector):
                 authors=[a for a in authors if a],
                 abstract=abstract,
                 license=license_str,
-                pdf_url=None,  # OpenAlex may provide OA URLs via best_oa_location
+                pdf_url=pdf_url,
                 year=year,
                 venue=(item.get("host_venue", {}) or {}).get("display_name"),
                 concepts=[c for c in concepts if c],
@@ -73,7 +97,8 @@ class OpenAlexConnector(Connector):
             )
 
     def fetch_pdf(self, item: PaperMetadata) -> Optional[PDFRef]:
-        # Try to use best_oa_location if present when metadata originated from OpenAlex
+        if item.pdf_url:
+            return PDFRef(url=item.pdf_url)
         return None
 
 
