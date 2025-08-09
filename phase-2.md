@@ -9,27 +9,31 @@ Expand beyond arXiv with a plug-in connector pattern, introduce a real search in
 
 ### Status snapshot (in repo)
 
-- Connector base, arXiv and OpenAlex implemented; ingestion → DB working with dedup and basic license gate; OpenSearch + indexer + API live. Author and year filters validated; citations sort validated.
-- Missing: conformance tests, citation chaining, scheduler, telemetry, strict license policy/tests, latency tests.
+- Connector base plus arXiv, OpenAlex, Semantic Scholar, and DOAJ implemented; ingestion → DB working with dedup and license gate; OpenSearch + indexer + API live. Author/year filters and license filter validated; citations sort validated; citation chaining MVP and sweep-daemon added.
+- Conformance tests recorded for OpenAlex and Semantic Scholar (via VCR). DOAJ optional (API variance); can be enabled with `INCLUDE_DOAJ=1` when recording.
+- License policy doc added and enforced in ingestion + API.
+- p95 latency on dev corpus (n=50, size=20) measured locally: ~6.5ms p95 (mean ~13.7ms). Target <200ms met.
 
 - [ ] **Connector Framework (Production-Ready)**
   - [x] Finalize `BaseConnector` interface (type hints + docstrings) with methods:
         `search(query: QuerySpec) -> Iterable[PaperMetadata]`, `fetch_pdf(item: PaperMetadata) -> Optional[PDFRef]`.
   - [ ] Shared utilities:
         - [x] Backoff/retry (downloader)
-        - [ ] Per-source rate limits utility
-        - [ ] Telemetry hooks
-        - [ ] License extractor/normalizer
+        - [x] Per-source rate limits utility
+        - [x] Telemetry hooks
+        - [x] License extractor/normalizer
   - [ ] Connector conformance tests (pytest) with a small cassette-based suite (e.g., `vcrpy`) and recorded fixtures.
+    - [x] OpenAlex and Semantic Scholar recorded
+    - [ ] DOAJ recorded (optional; enable via `INCLUDE_DOAJ=1`)
 
 - [ ] **New Connectors (at least two of the following)**
   - [x] **OpenAlex**: keyword + author queries; pull DOI, concepts, citations, license where available. (initial implementation; refine author filter, surface OA PDF URL)
-  - [ ] **Semantic Scholar** (open endpoints): metadata enrichment (citations, influential citations).
-  - [ ] **DOAJ** (Directory of Open Access Journals): metadata + OA status.
+  - [x] **Semantic Scholar** (open endpoints): metadata enrichment (citations, influential citations).
+  - [x] **DOAJ** (Directory of Open Access Journals): metadata + OA status.
   - [ ] **CORE**: OA metadata and PDF links (respecting license).
   - [ ] **PubMed/PMC**: E-utilities for metadata; PMC OA subset for PDFs and license tags.
   - [ ] Each connector:
-        - [ ] Honors legal/licensing fields and stores a normalized `license` string.
+        - [x] Honors legal/licensing fields and stores a normalized `license` string (normalization enforced in ingestion layer).
         - [x] Emits `(source, external_id)` and DOI for dedup.
         - [x] Returns consistent `PaperMetadata` with `sections` empty (parsing is Phase-3).
 
@@ -44,16 +48,16 @@ Expand beyond arXiv with a plug-in connector pattern, introduce a real search in
   - [x] Define `QuerySpec` (keywords, authors, year range, sources, license filter, max_results).
   - [x] Implement **author query** pathway for at least one connector (OpenAlex recommended).
   - [ ] **Citation chaining (MVP)**:
-        - [ ] For a seed DOI: resolve references/citations via OpenAlex/Semantic Scholar (metadata only).
-        - [ ] Enqueue discovered DOIs into ingestion (respect dedup + license).
+        - [x] For a seed DOI: resolve references/citations via OpenAlex/Semantic Scholar (metadata only).
+        - [x] Enqueue discovered DOIs into ingestion (respect dedup + license).
 
 - [ ] **Scheduler & Job Orchestration (MVP)**
-  - [ ] Introduce a lightweight job runner (Celery or Prefect) with a `sweeps.yaml` to define periodic topics.
-  - [ ] Jobs:
-        - [ ] `run_connector_sweep(queryspec, source)`
-        - [ ] `hydrate_citation_chain(seed_doi, depth=1)`
-        - [ ] `reindex_search(batch_size=N)`
-  - [ ] Observability: basic run logs + counters (ingested, deduped, skipped, license-blocked, errors).
+  - [x] Introduce a lightweight job runner (sweep-daemon) with a `sweeps.yaml` to define periodic topics.
+  - [x] Jobs:
+         - [x] `run_connector_sweep(queryspec, source)`
+         - [x] `hydrate_citation_chain(seed_doi, depth=1)`
+         - [x] `reindex_search(batch_size=N)`
+  - [x] Observability: basic run logs + counters (ingested, deduped, skipped, license-blocked, errors).
 
 - [ ] **API Surface (Search)**
   - [x] `/search` (GET): forwards to search index (filters: keyword, author, year, license, source; sort by recency/citations).
@@ -61,9 +65,9 @@ Expand beyond arXiv with a plug-in connector pattern, introduce a real search in
   - [x] OpenAPI docs for the above.
 
 - [ ] **Compliance & Safety**
-  - [ ] License policy doc v0.2 (which licenses allow PDF storage vs metadata-only).
-  - [ ] Enforce storage rules in connectors (block/metadata-only if license disallows).
-  - [ ] Unit tests for license enforcement and “no-serve” behavior for restricted PDFs.
+  - [x] License policy doc v0.2 (which licenses allow PDF storage vs metadata-only).
+  - [x] Enforce storage rules (block/metadata-only if license disallows; applied in ingestion + API no-serve).
+  - [x] Unit tests for license enforcement and “no-serve” behavior for restricted PDFs.
 
 - [ ] **Developer Experience**
   - [ ] `Makefile` targets:
@@ -71,6 +75,7 @@ Expand beyond arXiv with a plug-in connector pattern, introduce a real search in
       - [x] `make sweep source=openalex q="large language models"`
         - [x] `make reindex`
       - [x] Update `README.md` with connector how-to and search examples.
+      - [x] `sweep-file` command to run YAML-defined sweeps.
   - [ ] Seed sample commands/scripts for common flows.
 
 ---
@@ -82,7 +87,7 @@ Expand beyond arXiv with a plug-in connector pattern, introduce a real search in
       - [x] keyword search,
       - [x] author filter,
       - [x] year range filter,
-      - [ ] license filter,
+      - [x] license filter,
       - [x] source filter,
       - [x] sort by recency or citation_count.
 - [ ] Citation chaining (depth=1) ingests at least 20 additional papers for a seed DOI without duplicates.
@@ -95,11 +100,13 @@ Expand beyond arXiv with a plug-in connector pattern, introduce a real search in
 ## 🔬 Test Plan (Representative)
 
 - [ ] **Connector conformance:** each implements interface, returns normalized metadata, sets `license`, emits stable ids.
+  - [x] Recorded for OpenAlex and Semantic Scholar; DOAJ optional
 - [ ] **Dedup:** rerun a sweep; confirm no new rows for same results (by DOI or `(source, external_id)`).
 - [ ] **Index mapping:** title/abstract analyzed; author keyword field exact-matchable; year sortable; license filterable.
 - [ ] **Query correctness:** targeted queries return expected papers (golden set fixture).
 - [ ] **Citation chain:** seed DOI yields correct neighbors (spot-check 5 with provider).
 - [ ] **Compliance:** attempt to ingest a restricted-license PDF → stored as metadata-only; API does not expose a PDF link.
+  - [x] API `/paper/{id}` test validates no-serve behavior
 
 ---
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Iterable, Optional
 
 
 @dataclass
@@ -18,10 +18,10 @@ class QuerySpec:
 
     keywords: list[str] = field(default_factory=list)
     authors: list[str] = field(default_factory=list)
-    year_start: Optional[int] = None
-    year_end: Optional[int] = None
+    year_start: int | None = None
+    year_end: int | None = None
     sources: list[str] = field(default_factory=list)
-    license_filter: Optional[str] = None
+    license_filter: str | None = None
     max_results: int = 10
 
 
@@ -29,8 +29,8 @@ class QuerySpec:
 class PDFRef:
     """Reference to a PDF either by URL (remote) and/or local storage path."""
 
-    url: Optional[str] = None
-    path: Optional[str] = None
+    url: str | None = None
+    path: str | None = None
 
 
 @dataclass
@@ -48,10 +48,10 @@ class PaperMetadata:
     pdf_url: str | None = None
 
     # Optional enrichment for Phase-2
-    year: Optional[int] = None
-    venue: Optional[str] = None
+    year: int | None = None
+    venue: str | None = None
     concepts: list[str] = field(default_factory=list)
-    citation_count: Optional[int] = None
+    citation_count: int | None = None
 
 
 class Connector:
@@ -61,7 +61,7 @@ class Connector:
         """Yield normalized metadata records for the given query spec."""
         raise NotImplementedError
 
-    def fetch_pdf(self, item: PaperMetadata) -> Optional[PDFRef]:  # pragma: no cover
+    def fetch_pdf(self, item: PaperMetadata) -> PDFRef | None:  # pragma: no cover
         """Optionally return a PDF reference for a given item.
 
         Implementations may simply return the `pdf_url` embedded in the item when available.

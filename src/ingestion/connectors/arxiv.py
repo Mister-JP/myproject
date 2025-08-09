@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 import arxiv  # type: ignore
 
-from .base import Connector, PDFRef, PaperMetadata, QuerySpec
+from .base import Connector, PaperMetadata, PDFRef, QuerySpec
 
 
 class ArxivConnector(Connector):
@@ -43,7 +43,7 @@ class ArxivConnector(Connector):
                 pdf_url=result.pdf_url if getattr(result, "pdf_url", None) else None,
             )
 
-    def fetch_pdf(self, item: PaperMetadata) -> Optional[PDFRef]:
+    def fetch_pdf(self, item: PaperMetadata) -> PDFRef | None:
         if item.pdf_url:
             return PDFRef(url=item.pdf_url)
         return None

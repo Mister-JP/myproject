@@ -23,9 +23,11 @@ export DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/litera
 
 3) Run a search (choose one):
 ```bash
-# Module entrypoint (no PYTHONPATH needed after editable install). Supports --author and --source (arxiv|openalex).
-python -m ingestion.cli --query "transformer" --author "Vaswani" --max-results 3 --source arxiv
-python -m ingestion.cli --query "large language models" --max-results 3 --source openalex
+# Module entrypoint (no PYTHONPATH needed after editable install). Supports --author and --source (arxiv|openalex|semanticscholar).
+python -m ingestion.cli run --query "transformer" --author "Vaswani" --max-results 3 --source arxiv
+python -m ingestion.cli run --query "large language models" --max-results 3 --source openalex
+python -m ingestion.cli run --query "transformers" --max-results 3 --source semanticscholar
+python -m ingestion.cli run --query "climate change" --max-results 3 --source doaj
 
 # or via Makefile
 make run-search query="transformer" max=3
@@ -54,15 +56,24 @@ JSON like `{ "stored": N, "skipped": M, "errors": E }`. Metadata stored in DB, P
 GitHub Actions runs linting (ruff, black) and tests (pytest) on each PR/push to `main`.
 
 ### Notes on licensing & compliance
-- We store any available license metadata from arXiv. Always respect source licensing; only download PDFs where permitted by the source.
+- We normalize licenses (e.g., "CC BY 4.0" -> `cc-by`). PDFs are downloaded only for permissive licenses: `cc-*`, `cc0`, or `public-domain`. Others are treated as metadata-only.
+  - Enforcement lives in `ingestion.utils.license_permits_pdf_storage` and is applied during ingestion.
+  - The API also enforces a "no-serve" policy: `/paper/{id}` exposes `pdf_path` only when the license permits.
+
+See `docs/license_policy.md` for details.
 
 ### Makefile targets
 - `make db-up` / `make db-down`: start/stop PostgreSQL
 - `make setup`: install dependencies via Poetry
-- `make run-search query="..." max=10 [source=arxiv|openalex]`: run ingestion
+- `make run-search query="..." max=10 [source=arxiv|openalex|semanticscholar|doaj]`: run ingestion
 - `make search-up`: start OpenSearch
 - `make up` / `make down`: start/stop DB and search together
 - `make reindex`: push papers from DB into search index
+- `make hydrate-citations seed=10.1007/s11263-015-0816-y depth=1`: simple citation chaining
+  - Citation neighbors are fetched via OpenAlex (`ingestion.citations.fetch_openalex_neighbors`).
+  
+### Benchmarking search
+- Ensure OpenSearch is up (`make search-up`), index documents (`make reindex`), then run `make bench`.
 - `make api`: run the FastAPI server on `http://localhost:8000`
 - `make sweep source=openalex q="large language models" max=20`: simple sweep convenience wrapper
 

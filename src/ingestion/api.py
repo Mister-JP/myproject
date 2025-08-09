@@ -1,18 +1,30 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Optional
+from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
 from opensearchpy import OpenSearch
-from sqlalchemy import select
 
 from .config import Settings
 from .db import Base, create_session_factory
 from .models import Paper
+from .utils import license_permits_pdf_storage
 
 
-app = FastAPI(title="Literature Search API", version="0.2.0")
+@asynccontextmanager
+async def _lifespan(_: FastAPI):
+    # Ensure DB schema exists on startup
+    settings = Settings.from_env()
+    session_factory = create_session_factory(settings.database_url)
+    with session_factory() as session:
+        engine = session.get_bind()
+        Base.metadata.create_all(engine)
+    yield
+
+
+app = FastAPI(title="Literature Search API", version="0.2.0", lifespan=_lifespan)
 
 
 def _get_client() -> OpenSearch:
@@ -23,25 +35,15 @@ def _get_client() -> OpenSearch:
 INDEX_NAME = os.environ.get("SEARCH_INDEX", "papers")
 
 
-@app.on_event("startup")
-def startup() -> None:
-    settings = Settings.from_env()
-    # ensure DB exists
-    session_factory = create_session_factory(settings.database_url)
-    with session_factory() as session:
-        engine = session.get_bind()
-        Base.metadata.create_all(engine)
-
-
 @app.get("/paper/{paper_id}")
-def get_paper(paper_id: int) -> Dict[str, Any]:
+def get_paper(paper_id: int) -> dict[str, Any]:
     settings = Settings.from_env()
     session_factory = create_session_factory(settings.database_url)
     with session_factory() as session:
         paper = session.get(Paper, paper_id)
         if not paper:
             raise HTTPException(status_code=404, detail="Paper not found")
-        return {
+        payload = {
             "id": paper.id,
             "source": paper.source,
             "external_id": paper.external_id,
@@ -50,33 +52,38 @@ def get_paper(paper_id: int) -> Dict[str, Any]:
             "authors": paper.authors.get("list", []) if paper.authors else [],
             "abstract": paper.abstract,
             "license": paper.license,
-            "pdf_path": paper.pdf_path,
             "fetched_at": paper.fetched_at.isoformat() if paper.fetched_at else None,
         }
+        # Enforce no-serve policy for restricted licenses
+        if paper.pdf_path and license_permits_pdf_storage(paper.license):
+            payload["pdf_path"] = paper.pdf_path
+        else:
+            payload["pdf_path"] = None
+        return payload
 
 
 @app.get("/search")
 def search(
-    q: Optional[str] = Query(None, description="Keyword query"),
-    author: Optional[str] = Query(None, description="Author filter"),
-    year_start: Optional[int] = Query(None),
-    year_end: Optional[int] = Query(None),
-    license: Optional[str] = Query(None, alias="license"),
-    source: Optional[str] = Query(None),
+    q: str | None = Query(None, description="Keyword query"),
+    author: str | None = Query(None, description="Author filter"),
+    year_start: int | None = Query(None),
+    year_end: int | None = Query(None),
+    license: str | None = Query(None, alias="license"),
+    source: str | None = Query(None),
     sort: str = Query("recency", description="recency|citations"),
     size: int = Query(20, ge=1, le=100),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     client = _get_client()
 
-    must: list[Dict[str, Any]] = []
-    filter_q: list[Dict[str, Any]] = []
+    must: list[dict[str, Any]] = []
+    filter_q: list[dict[str, Any]] = []
 
     if q:
         must.append({"multi_match": {"query": q, "fields": ["title^2", "abstract"]}})
     if author:
         filter_q.append({"term": {"authors": author}})
     if year_start is not None or year_end is not None:
-        range_body: Dict[str, Any] = {}
+        range_body: dict[str, Any] = {}
         if year_start is not None:
             range_body["gte"] = year_start
         if year_end is not None:
@@ -96,12 +103,10 @@ def search(
     res = client.search(index=INDEX_NAME, body={"query": query, "size": size, "sort": sort_clause})
     hits = [
         {
-            "id": h.get("_id"),
+            "id": int(h.get("_id")) if str(h.get("_id")).isdigit() else h.get("_id"),
             "score": h.get("_score"),
             **h.get("_source", {}),
         }
         for h in res.get("hits", {}).get("hits", [])
     ]
     return {"total": res.get("hits", {}).get("total", {}).get("value", 0), "hits": hits}
-
-
