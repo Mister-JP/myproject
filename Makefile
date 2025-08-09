@@ -1,6 +1,6 @@
 PY = python
 
-.PHONY: setup install lint format test db-up db-down search-up up down run-search reindex api sweep hydrate-citations sweep-daemon bench
+.PHONY: setup install lint format test db-up db-down search-up up down run-search reindex api sweep hydrate-citations sweep-daemon bench pre-commit
 
 setup:
 	@echo "Poetry not detected; use pip install -r requirements.txt or install Poetry if desired."
@@ -9,10 +9,10 @@ install:
 	poetry install --no-root
 
 lint:
-	@echo "Skipping lint (Poetry/linters not installed via pip)."
+	. .venv/bin/activate && ruff check .
 
 format:
-	@echo "Skipping format (Poetry/linters not installed via pip)."
+	. .venv/bin/activate && black .
 
 test:
 	PYTHONPATH=src $(PY) -m pytest -q
@@ -54,4 +54,5 @@ sweep-daemon:
 bench:
 	PYTHONPATH=src $(PY) scripts/bench_search.py
 
-
+pre-commit:
+	. .venv/bin/activate && pre-commit run --all-files
