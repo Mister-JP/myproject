@@ -9,7 +9,8 @@ fastapi==0.111.0
 uvicorn==0.30.0
 python-multipart==0.0.9
 opensearch-py==2.6.0
-vcrpy==6.0.1
+vcrpy==6.0.3
+urllib3<2.2.0
 PyYAML==6.0.2
 pytest==8.2.2
 pdfminer.six==20231228

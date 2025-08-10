@@ -23,7 +23,10 @@ opensearch-py = "^2.6.0"
 black = "^24.4.2"
 ruff = "^0.4.8"
 pytest = "^8.2.2"
-vcrpy = "^6.0.1"
+vcrpy = "^6.0.3"
+
+# Pin urllib3 to avoid incompatibility between urllib3 >=2.2 and vcrpy response stubs in CI
+urllib3 = "<2.2.0"
 
 [tool.black]
 line-length = 100
@@ -41,5 +44,3 @@ ignore = ["E501"]
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-
