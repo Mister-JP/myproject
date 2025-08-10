@@ -2,29 +2,22 @@
 
 What changed and why. Link issues if relevant.
 
-## Scope
+## Type
 
-- [ ] Phase-1 foundations
-- [ ] Phase-2 search/index/connectors
-- [ ] Phase-3 parsing/summarization
-- [ ] DX/docs/infra
+- [ ] Feature
+- [ ] Fix
+- [ ] Docs
+- [ ] Chore
 
 ## Checklist
 
 - [ ] Tests added/updated as needed
-- [ ] `make test` green locally
-- [ ] If touching connectors: live runs gated behind `RUN_LIVE=1`, otherwise use/update cassettes
-- [ ] License policy respected (`license_permits_pdf_storage`); no restricted PDFs served via API
-- [ ] OpenSearch index mapping unchanged or reindex performed (`make reindex`)
-- [ ] Docs updated (`README.md`, `phase-*.md`, or `docs/`)
-- [ ] Secrets hygiene: no keys in code or cassettes; `.env.example` updated if needed
+- [ ] Local tests green
+- [ ] Docs updated (if needed)
+- [ ] No secrets committed (env vars only; update `.env.example` if needed)
 
 ## Validation
 
-- [ ] Ingest sample: `python -m ingestion.cli run --query "..." --source ...`
-- [ ] Reindex: `make reindex`
-- [ ] API smoke: `/search`, `/paper/{id}`, `/summaries`
-- [ ] UI smoke: `/ui/search?q=demo` (use `make seed-demo-ui` if needed)
-- [ ] Optional: `make bench` p95 under target
+- [ ] Manual or automated checks performed (briefly list)
 
 ## Screenshots / Logs (optional)
