@@ -1,28 +1,30 @@
 ## Summary
 
-Describe the changes in this PR and the motivation.
+What changed and why. Link issues if relevant.
 
-## Phase & Scope
+## Scope
 
-- [ ] Phase-2
-- [ ] Other (specify)
+- [ ] Phase-1 foundations
+- [ ] Phase-2 search/index/connectors
+- [ ] Phase-3 parsing/summarization
+- [ ] DX/docs/infra
 
 ## Checklist
 
 - [ ] Tests added/updated as needed
 - [ ] `make test` green locally
-- [ ] If touching ingestion or connectors, recorded tests either gated behind `RUN_LIVE=1` or with cassettes
-- [ ] License policy respected (`license_permits_pdf_storage`), no restricted PDFs served via API
-- [ ] OpenSearch index mapping unaffected or updated via `reindex`
-- [ ] Docs updated (`README.md`, `phase-2.md`, or `docs/`)
+- [ ] If touching connectors: live runs gated behind `RUN_LIVE=1`, otherwise use/update cassettes
+- [ ] License policy respected (`license_permits_pdf_storage`); no restricted PDFs served via API
+- [ ] OpenSearch index mapping unchanged or reindex performed (`make reindex`)
+- [ ] Docs updated (`README.md`, `phase-*.md`, or `docs/`)
+- [ ] Secrets hygiene: no keys in code or cassettes; `.env.example` updated if needed
 
 ## Validation
 
-- [ ] Ingested sample: `python -m ingestion.cli run --query "..." --source ...`
-- [ ] Reindexed: `python -m ingestion.cli reindex`
-- [ ] API smoke: `/search` and `/paper/{id}`
+- [ ] Ingest sample: `python -m ingestion.cli run --query "..." --source ...`
+- [ ] Reindex: `make reindex`
+- [ ] API smoke: `/search`, `/paper/{id}`, `/summaries`
+- [ ] UI smoke: `/ui/search?q=demo` (use `make seed-demo-ui` if needed)
 - [ ] Optional: `make bench` p95 under target
 
 ## Screenshots / Logs (optional)
-
-
